@@ -10,7 +10,7 @@ app.use(express.json());
 
 // Configuração do OpenAI
 const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: "REMOVED",
 });
 const openai = new OpenAIApi(configuration);
 
