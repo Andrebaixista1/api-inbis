@@ -10,31 +10,9 @@ app.use(express.json());
 
 // Configuração do OpenAI
 const configuration = new Configuration({
-  apiKey: "REMOVED",
+  apiKey: process.env.OPENAI_API_KEY, // Use variável de ambiente
 });
 const openai = new OpenAIApi(configuration);
-
-// Middleware para restringir IPs
-app.use((req, res, next) => {
-  const allowedIps = ['::1','201.0.21.143', '45.224.161.116'];
-  let clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-  
-  // Corrigir o formato do IP quando estiver em formato IPv6
-  if (clientIp.includes(',')) {
-    clientIp = clientIp.split(',')[0].trim();  // No caso de múltiplos IPs intermediários
-  }
-  
-  // Se for IPv6, tratar a versão com ::ffff:
-  clientIp = clientIp.replace('::ffff:', '');
-  
-  console.log('IP cliente:', clientIp); // Para depuração
-  
-  if (!allowedIps.includes(clientIp)) {
-    return res.status(403).json({ error: 'Acesso negado' });
-  }
-
-  next();  // Permitir acesso se o IP for permitido
-});
 
 // Rota para enviar mensagem e receber resposta
 app.post('/api/chat', async (req, res) => {
@@ -97,13 +75,18 @@ app.post('/api/chat', async (req, res) => {
       assistantMessage
     });
   } catch (error) {
-    // Logar o erro para ver no console o que está acontecendo
     console.error('Erro na rota /api/chat:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+// Para rodar localmente (node index.js)
+if (require.main === module) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+  });
+}
+
+// Exportar o app para o Vercel
+module.exports = app;
