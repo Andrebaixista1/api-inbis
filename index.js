@@ -16,7 +16,7 @@ const openai = new OpenAIApi(configuration);
 
 // Middleware para restringir IPs
 app.use((req, res, next) => {
-  const allowedIps = ['201.0.21.143', '45.224.161.116'];
+  const allowedIps = ['::1','201.0.21.143', '45.224.161.116'];
   let clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
   
   // Corrigir o formato do IP quando estiver em formato IPv6
