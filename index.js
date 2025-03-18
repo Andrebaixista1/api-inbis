@@ -12,6 +12,9 @@ app.use(express.json());
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY , // Use variável de ambiente
 });
+
+console.log("DEBUG: process.env.OPENAI_API_KEY =>", process.env.OPENAI_API_KEY);
+
 const openai = new OpenAIApi(configuration);
 
 // Rota para enviar mensagem e receber resposta
