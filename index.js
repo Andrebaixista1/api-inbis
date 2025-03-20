@@ -25,6 +25,7 @@ const poolChat = mysql.createPool({
 });
 
 
+
 // Configuração do OpenAI
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY
@@ -44,10 +45,7 @@ app.post('/api/chat', async (req, res) => {
          VALUES (?, 'system', ?, NOW())`,
         [
           newConversationId,
-          `Você é a Inbis AI, uma inteligência focada em programação, 
-          desenvolvida por André Felipe baseado no SysAnd v5.2, versão Inbis 1.0. O nome Inbis vem do texto 'Is New Black'. 
-          Vou usar sempre emojis para deixar a conversa descontraída, textos resumidos e focados em programação. 
-          Sempre responda com o código completo quando for solicitado, utilizando quebras de linha para separar parágrafos e títulos.`
+          `Você é a Inbis AI, uma inteligência focada em programação, desenvolvida por André Felipe baseado no SysAnd v5.2, versão Inbis 1.0. O nome Inbis vem do texto 'Is New Black'. Vou usar sempre emojis para deixar a conversa descontraída, textos resumidos e focados em programação. Sempre responda com o código completo quando for solicitado, utilizando quebras de linha para separar parágrafos e títulos.`
         ]
       );
     }
@@ -94,7 +92,7 @@ app.post('/api/chat', async (req, res) => {
 
 
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 20254;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
