@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2/promise');
+const axios = require('axios');
 const { Configuration, OpenAIApi } = require('openai');
 
 const app = express();
@@ -10,10 +11,8 @@ app.use(cors({
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type']
 }));
-
 app.use(express.json());
 
-// Pool para o histórico de conversas (chat)
 const poolChat = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -24,15 +23,11 @@ const poolChat = mysql.createPool({
   queueLimit: 0
 });
 
-
-
-// Configuração do OpenAI
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY
 });
 const openai = new OpenAIApi(configuration);
 
-// Rota para o chat (utiliza o poolChat)
 app.post('/api/chat', async (req, res) => {
   try {
     const { conversationId, userMessage } = req.body;
@@ -90,7 +85,21 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-
+app.post('/api/macica', async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ error: 'Prompt não informado.' });
+    }
+    const response = await axios.post('https://api-macica.vercel.app/query', {
+      prompt
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error("Erro na rota /api/macica:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 const PORT = process.env.PORT || 20254;
 app.listen(PORT, () => {
