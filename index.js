@@ -1,29 +1,33 @@
+// index.js
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const pool = require('./db');
+const mysql = require('mysql2/promise');
+const axios = require('axios');
 const { Configuration, OpenAIApi } = require('openai');
+
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT
+});
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Configuração do OpenAI
 const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY , // Use variável de ambiente
+  apiKey: process.env.OPENAI_API_KEY
 });
-
-console.log("DEBUG: process.env.OPENAI_API_KEY =>", process.env.OPENAI_API_KEY);
-
 const openai = new OpenAIApi(configuration);
 
-// Rota para enviar mensagem e receber resposta
 app.post('/api/chat', async (req, res) => {
   try {
     const { conversationId, userMessage } = req.body;
     let newConversationId = conversationId;
 
-    // Se não existir conversationId, cria um novo e insere o prompt de sistema
     if (!newConversationId) {
       newConversationId = Date.now().toString();
       await pool.query(
@@ -37,53 +41,57 @@ app.post('/api/chat', async (req, res) => {
       );
     }
 
-    // Inserir mensagem do usuário
     await pool.query(
       `INSERT INTO conversas (conversation_id, role, message, created_at)
        VALUES (?, ?, ?, NOW())`,
       [newConversationId, 'user', userMessage]
     );
 
-    // Buscar todo o histórico dessa conversa
     const [rows] = await pool.query(
       `SELECT role, message FROM conversas WHERE conversation_id = ? ORDER BY id ASC`,
       [newConversationId]
     );
 
-    // Converter para o formato esperado pela OpenAI
     const messages = rows.map(row => ({
       role: row.role,
-      content: row.message,
+      content: row.message
     }));
 
-    // Chamar a API da OpenAI
     const response = await openai.createChatCompletion({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4-turbo',
       messages
     });
 
-    // Extrair resposta do assistente
     const assistantMessage = response.data.choices[0].message.content;
 
-    // Salvar resposta no banco
     await pool.query(
       `INSERT INTO conversas (conversation_id, role, message, created_at)
        VALUES (?, ?, ?, NOW())`,
       [newConversationId, 'assistant', assistantMessage]
     );
 
-    // Retornar para o front-end
     res.json({
       conversationId: newConversationId,
       assistantMessage
     });
   } catch (error) {
-    console.error('Erro na rota /api/chat:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Para rodar localmente (node index.js)
+app.post('/api/macica', async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ error: 'Prompt não informado.' });
+    }
+    const response = await axios.post('https://api-macica.vercel.app/query', { prompt });
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 if (require.main === module) {
   const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => {
@@ -91,5 +99,4 @@ if (require.main === module) {
   });
 }
 
-// Exportar o app para o Vercel
 module.exports = app;
